@@ -1,11 +1,37 @@
 import { open } from "node:fs/promises";
+import { createInterface } from "node:readline";
 
-const readDict = async (): Promise<void> => {
+const readDict = async (startingPoint: number): Promise<void> => {
     const dictHandle = await open("./dict.txt", "r");
-    for await (const line of dictHandle.readLines()) {
-        console.log(line)
-    }
-    await dictHandle.close();
+    const readable = dictHandle.createReadStream();
+    const reader = createInterface({ input: readable });
+
+    let lines: Array<string> = await new Promise((resolve) => {
+        const result: Array<string> = [];
+        let counter = 0;
+        reader.on('line', (line) => {
+            if (counter >= startingPoint && counter < startingPoint + 100) {
+                result.push(line);
+                counter++;
+            } else if (counter < startingPoint + 100) {
+                counter++;
+            } else {
+                reader.close();
+            }
+        });
+        reader.on('close', () => {
+            resolve(result);
+        });
+    });
+
+    lines = lines.filter((word) => word.length > 2);
+
+    console.log(lines.join())
+    reader.close()
+    readable.close();
+    dictHandle.close();
 }
 
-readDict();
+readDict(0);
+readDict(100);
+readDict(200);
