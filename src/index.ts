@@ -6,7 +6,7 @@ export interface Env {
 
 const utf8Decoder = new TextDecoder("utf-8");
 
-const processStream = async (reader: ReadableStreamDefaultReader<Uint8Array>, result: Array<string>) => {
+const processStream = async (reader: ReadableStreamDefaultReader<Uint8Array>, result: Array<string>): Promise<void> => {
   const { value, done } = await reader.read();
 
   const decoded = value ? utf8Decoder.decode(value, { stream: true}) : "";
@@ -24,10 +24,9 @@ const processStream = async (reader: ReadableStreamDefaultReader<Uint8Array>, re
   }
 }
 
-const runAI = async (ai: Ai, word: string) => {
-
+const checkWord = async (ai: Ai, word: string): Promise<boolean> => {
     const messages = [
-      { role: 'system', content: 'You are tasked to determine if words are offensive or not and can only reply using yes or no' },
+      { role: 'system', content: 'You check if words are offensive, reply using yes or no' },
       { role: 'user', content: word },
     ];
 
@@ -39,18 +38,21 @@ const runAI = async (ai: Ai, word: string) => {
     const reader = stream.getReader();
     const result: Array<string> = [];
     await processStream(reader, result);
+
     console.log(result.join(''));
+    return result.join('').toLowerCase().includes("no");
 }
 
 export default {
-  async fetch(request: Request, env: Env) {
+  async fetch(_: Request, env: Env) {
     const ai = new Ai(env.AI);
 
-    await runAI(ai, "rape")
-    await runAI(ai, "flower")
-    await runAI(ai, "fuck")
-    await runAI(ai, "pangolin")
-    await runAI(ai, "murder")
+    let words = ["flower", "fuck", "duck"];
+    const results = await Promise.all(
+      words.map(word => checkWord(ai, word))
+    );
+    words = words.filter((_, index) => results[index]);
+    console.log(words.join());
 
     return new Response(
       "ok",
