@@ -24,16 +24,14 @@ const processStream = async (reader: ReadableStreamDefaultReader<Uint8Array>, re
   }
 }
 
-export default {
-  async fetch(request: Request, env: Env) {
-    const ai = new Ai(env.AI);
+const runAI = async (ai: Ai, word: string) => {
 
     const messages = [
-      { role: 'system', content: 'You are a friendly assistant' },
-      { role: 'user', content: 'What is the origin of the phrase Hello, World' }
+      { role: 'system', content: 'You are tasked to determine if words are offensive or not and can only reply using yes or no' },
+      { role: 'user', content: word },
     ];
 
-    const stream = await ai.run('@cf/meta/llama-2-7b-chat-int8', {
+    const stream = await ai.run('@cf/mistral/mistral-7b-instruct-v0.1', {
       messages,
       stream: true
     });
@@ -42,6 +40,17 @@ export default {
     const result: Array<string> = [];
     await processStream(reader, result);
     console.log(result.join(''));
+}
+
+export default {
+  async fetch(request: Request, env: Env) {
+    const ai = new Ai(env.AI);
+
+    await runAI(ai, "rape")
+    await runAI(ai, "flower")
+    await runAI(ai, "fuck")
+    await runAI(ai, "pangolin")
+    await runAI(ai, "murder")
 
     return new Response(
       "ok",
