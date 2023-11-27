@@ -1,52 +1,18 @@
-import { open } from "node:fs/promises";
-import { createInterface } from "node:readline";
+import { open, FileHandle } from "node:fs/promises";
 
-// reads 10 lines from the dictionary
-const readDict = async (startingPoint: number): Promise<Array<string>> => {
-    const dictHandle = await open("./dict.txt", "r");
-    const readable = dictHandle.createReadStream();
-    const reader = createInterface({ input: readable });
-
-    let lines: Array<string> = await new Promise((resolve) => {
-        const result: Array<string> = [];
-        let counter = 0;
-        reader.on('line', (line) => {
-            if (counter >= startingPoint && counter < startingPoint + 10) {
-                result.push(line);
-                counter++;
-            } else if (counter < startingPoint + 10) {
-                counter++;
-            } else {
-                reader.close();
-            }
-        });
-        reader.on('close', () => {
-            resolve(result);
-        });
-    });
-
-
-    reader.close()
-    readable.close();
-    dictHandle.close();
-
-    // we ignore words longer than 3 chars
-    return lines.filter((word) => word.length > 2);
-}
 
 // saves the current progress
-const save = async (count: number): Promise<void> => {
-    const saveHandle = await open("./save.txt", "w");
-    await saveHandle.writeFile(`${count}`)
-    saveHandle.close()
+const save = async (saveHandle: FileHandle, count: number): Promise<void> => {
+    await saveHandle.truncate()
+    await saveHandle.writeFile(`${count}\n`)
 };
 
 // loads the current progress
-const load = async (): Promise<number> => {
-    const saveHandle = await open("./save.txt", "r");
+const load = async (saveHandle: FileHandle): Promise<number> => {
     const content = await saveHandle.readFile();
-    saveHandle.close();
-    return parseInt(content.toString());
+    const res = parseInt(content.toString());
+    console.log(res) // why the fuck is it literally always NaN
+    return 0;
 }
 
 // wrapper around setTimeout
@@ -68,38 +34,48 @@ const requestServer = async (words: Array<string>): Promise<Array<string>> => {
 }
 
 // write words to result.txt
-const writeResult = async (words: Array<string>): Promise<void> => {
-    const resultHandle = await open("result.txt", "a");
+const writeResult = async (resultHandle: FileHandle, words: Array<string>): Promise<void> => {
     for (const i in words) {
          await resultHandle.appendFile(words[i] + "\n")
     }
-    resultHandle.close()
 }
 
 const main = async (): Promise<void> => {
+    const saveHandle = await open("./save.txt", "r+");
     let progress = 0;
-    try {
-        progress = await load();
-    } catch {
-        console.log("No save.txt found, starting at index 0");
+    progress = await load(saveHandle);
+
+    const resultHandle = await open("result.txt", "a");
+    const dictHandle = await open("./dict.txt", "r");
+    
+    const lines: Array<string> = [];
+    for await (const line of dictHandle.readLines()) {
+        lines.push(line)
     }
 
-    while (progress < 370105) {
+    while (progress < lines.length) {
         try {
-            const words = await readDict(progress);
-            const filteredWords = await requestServer(words);
+            // we ignore words of more than 2 chars
+            const nextWords = lines.filter((v, i) => i >= progress && i < progress + 10 && v.length > 2)
+            console.log(nextWords.join())
+            //const filteredWords = await requestServer(nextWords);
             progress = progress + 10
+            await save(saveHandle, progress)
             const promises = [
-                writeResult(filteredWords),
-                save(progress),
+                //writeResult(resultHandle, filteredWords),
+                save(saveHandle, progress),
                 timeout(1000),
             ];
             await Promise.all(promises)
+            console.log(`Progress: ${progress}`)
         } catch (err) {
             console.log(err)
             return
-        }
     }
+}
+
+resultHandle.close()
+saveHandle.close();
 }
 
 main()
