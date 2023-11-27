@@ -24,6 +24,7 @@ const readDict = async (startingPoint: number): Promise<void> => {
         });
     });
 
+    // we ignore words longer than 3 chars
     lines = lines.filter((word) => word.length > 2);
 
     console.log(lines.join())
@@ -32,6 +33,16 @@ const readDict = async (startingPoint: number): Promise<void> => {
     dictHandle.close();
 }
 
-readDict(0);
-readDict(100);
-readDict(200);
+const save = async (count: number): Promise<void> => {
+    const saveHandle = await open("./save.txt", "w");
+    await saveHandle.writeFile(`${count}`)
+    saveHandle.close()
+};
+
+const load = async (): Promise<number> => {
+    const saveHandle = await open("./save.txt", "r");
+    const content = await saveHandle.readFile();
+    console.log(parseInt(content.toString()));
+    saveHandle.close();
+    return parseInt(content.toString());
+}
