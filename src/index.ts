@@ -22,7 +22,7 @@ const processStream = async (reader: ReadableStreamDefaultReader<Uint8Array>, re
   if (!done) {
     await processStream(reader, result)
   }
-}
+};
 
 const checkWord = async (ai: Ai, word: string): Promise<boolean> => {
     const messages = [
@@ -39,23 +39,21 @@ const checkWord = async (ai: Ai, word: string): Promise<boolean> => {
     const result: Array<string> = [];
     await processStream(reader, result);
 
-    console.log(result.join(''));
     return result.join('').toLowerCase().includes("no");
-}
+};
 
 export default {
-  async fetch(_: Request, env: Env) {
+  async fetch(request: Request, env: Env) {
     const ai = new Ai(env.AI);
 
-    let words = ["flower", "fuck", "duck"];
-    const results = await Promise.all(
+    const words: Array<string> = await request.json()
+    const isOffensive = await Promise.all(
       words.map(word => checkWord(ai, word))
     );
-    words = words.filter((_, index) => results[index]);
-    console.log(words.join());
+    const result = words.filter((_, index) => isOffensive[index]);
 
     return new Response(
-      "ok",
+      JSON.stringify(result),
       { headers: { "content-type": "text/event-stream" } }
     );
   },
