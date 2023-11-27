@@ -1,0 +1,23 @@
+{
+  "name": "clean-wordlist-client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "start": "ts-node index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zer0tonin/clean-wordlist.git"
+  },
+  "author": "Alice Girard Guittard",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zer0tonin/clean-wordlist/issues"
+  },
+  "homepage": "https://github.com/zer0tonin/clean-wordlist#readme",
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.2"
+  }
+}
