@@ -3,16 +3,17 @@ import { open, FileHandle } from "node:fs/promises";
 
 // saves the current progress
 const save = async (saveHandle: FileHandle, count: number): Promise<void> => {
-    await saveHandle.truncate()
-    await saveHandle.writeFile(`${count}\n`)
+    await saveHandle.truncate(0)
+    await saveHandle.write(`${count}\n`, 0)
 };
 
 // loads the current progress
-const load = async (saveHandle: FileHandle): Promise<number> => {
+const load = async (): Promise<number> => {
+    const saveHandle = await open("./save.txt", "r");
     const content = await saveHandle.readFile();
     const res = parseInt(content.toString());
-    console.log(res) // why the fuck is it literally always NaN
-    return 0;
+    await saveHandle.close()
+    return res;
 }
 
 // wrapper around setTimeout
@@ -41,12 +42,16 @@ const writeResult = async (resultHandle: FileHandle, words: Array<string>): Prom
 }
 
 const main = async (): Promise<void> => {
-    const saveHandle = await open("./save.txt", "r+");
     let progress = 0;
-    progress = await load(saveHandle);
+    try {
+        progress = await load();
+    } catch {
+        //
+    }
 
     const resultHandle = await open("result.txt", "a");
     const dictHandle = await open("./dict.txt", "r");
+    const saveHandle = await open("./save.txt", "w+")
     
     const lines: Array<string> = [];
     for await (const line of dictHandle.readLines()) {
@@ -71,11 +76,12 @@ const main = async (): Promise<void> => {
         } catch (err) {
             console.log(err)
             return
+        }
     }
-}
 
-resultHandle.close()
-saveHandle.close();
+    resultHandle.close();
+    dictHandle.close();
+    saveHandle.close();
 }
 
 main()
