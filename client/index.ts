@@ -1,7 +1,7 @@
 import { open } from "node:fs/promises";
 import { createInterface } from "node:readline";
 
-// reads 1000 lines from the dictionary
+// reads 10 lines from the dictionary
 const readDict = async (startingPoint: number): Promise<Array<string>> => {
     const dictHandle = await open("./dict.txt", "r");
     const readable = dictHandle.createReadStream();
@@ -11,10 +11,10 @@ const readDict = async (startingPoint: number): Promise<Array<string>> => {
         const result: Array<string> = [];
         let counter = 0;
         reader.on('line', (line) => {
-            if (counter >= startingPoint && counter < startingPoint + 1000) {
+            if (counter >= startingPoint && counter < startingPoint + 10) {
                 result.push(line);
                 counter++;
-            } else if (counter < startingPoint + 1000) {
+            } else if (counter < startingPoint + 10) {
                 counter++;
             } else {
                 reader.close();
@@ -67,6 +67,15 @@ const requestServer = async (words: Array<string>): Promise<Array<string>> => {
     return res
 }
 
+// write words to result.txt
+const writeResult = async (words: Array<string>): Promise<void> => {
+    const resultHandle = await open("result.txt", "a");
+    for (const i in words) {
+         await resultHandle.appendFile(words[i] + "\n")
+    }
+    resultHandle.close()
+}
+
 const main = async (): Promise<void> => {
     let progress = 0;
     try {
@@ -76,11 +85,21 @@ const main = async (): Promise<void> => {
     }
 
     while (progress < 370105) {
-        const words = await readDict(progress);
-        progress = progress + 1000
-        await save(progress);
-        await timeout(1000)
+        try {
+            const words = await readDict(progress);
+            const filteredWords = await requestServer(words);
+            progress = progress + 10
+            const promises = [
+                writeResult(filteredWords),
+                save(progress),
+                timeout(1000),
+            ];
+            await Promise.all(promises)
+        } catch (err) {
+            console.log(err)
+            return
+        }
     }
 }
 
-requestServer(["fuck", "duck", "flower"]);
+main()
