@@ -2,7 +2,7 @@ import { open } from "node:fs/promises";
 import { createInterface } from "node:readline";
 
 // reads 1000 lines from the dictionary
-const readDict = async (startingPoint: number): Promise<void> => {
+const readDict = async (startingPoint: number): Promise<Array<string>> => {
     const dictHandle = await open("./dict.txt", "r");
     const readable = dictHandle.createReadStream();
     const reader = createInterface({ input: readable });
@@ -25,12 +25,13 @@ const readDict = async (startingPoint: number): Promise<void> => {
         });
     });
 
-    // we ignore words longer than 3 chars
-    lines = lines.filter((word) => word.length > 2);
 
     reader.close()
     readable.close();
     dictHandle.close();
+
+    // we ignore words longer than 3 chars
+    return lines.filter((word) => word.length > 2);
 }
 
 // saves the current progress
@@ -53,6 +54,19 @@ const timeout = async (ms: number): Promise<void> => {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// sends a request to cloudflare
+const requestServer = async (words: Array<string>): Promise<Array<string>> => {
+    const resp = await fetch(process.env.SERVER_URL!, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(words),
+    })
+    const res = (await resp.json() as Array<string>)
+    return res
+}
+
 const main = async (): Promise<void> => {
     let progress = 0;
     try {
@@ -62,11 +76,11 @@ const main = async (): Promise<void> => {
     }
 
     while (progress < 370105) {
-        await readDict(progress);
+        const words = await readDict(progress);
         progress = progress + 1000
         await save(progress);
-        await timeout(60000)
+        await timeout(1000)
     }
 }
 
-main()
+requestServer(["fuck", "duck", "flower"]);
