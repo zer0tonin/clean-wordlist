@@ -20,7 +20,8 @@ npx wrangler dev --remote
 # Client
 
 The client will send the server words 5 by 5 to build the `result.txt` file.
-The process takes around 20h, so you might want to just use the results I provided.
+The process takes more than 20h, and the whole thing is not very stable.
+So you might really want to just use the results I provided in result.txt.
 
 Launch it by doing:
 
